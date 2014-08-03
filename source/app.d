@@ -15,5 +15,5 @@ shared static this() {
 
 void index(HTTPServerRequest req, HTTPServerResponse res) {
 	res.contentType = "text/html";
-	res.bodyWriter.write(vibe.core.file.openFile("static/index.html").readAll);
+	res.bodyWriter.write(vibe.core.file.openFile("static/index.html"));
 }
