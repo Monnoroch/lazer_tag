@@ -1,0 +1,10 @@
+{
+	"name": "lazer_tag",
+	"description": "Laser tag game.",
+	"copyright": "Copyright © 2014, mon",
+	"authors": ["mon"],
+	"dependencies": {
+		"vibe-d": ">=0.7.20"
+	},
+	"versions": ["VibeDefaultMain"]
+}
