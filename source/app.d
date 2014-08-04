@@ -8,8 +8,8 @@ shared static this() {
 	router.get("/", &index);
 
 	auto settings = new HTTPServerSettings;
-	settings.port = 9000;
-	settings.bindAddresses = ["::1", "127.0.0.1"];
+	settings.port = 9007;
+	//settings.bindAddresses = ["", "127.0.0.1"];
 	listenHTTP(settings, router);
 }
 
