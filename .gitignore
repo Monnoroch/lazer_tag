@@ -1,3 +1,4 @@
 .dub
 lazer_tag
 *.o
+static/js/pixi.js/*
