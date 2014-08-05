@@ -79,23 +79,32 @@ function createPrisma(data, stage) {
 	var displayObj = new PIXI.DisplayObjectContainer();
 	displayObj.position =  new PIXI.Point(data.position.x, data.position.y);
 
-	function onMouseleave() {
+	function disableDots() {
 		for (var i = 0; i < displayObj.points.length; ++i) {
 			displayObj.points[i].visible = false;
 		}
 	}
 
-	graphics.mouseover = function(eventData) {
+	function enableDots() {
 		for (var i = 0; i < displayObj.points.length; ++i) {
 			displayObj.points[i].visible = true;
 		}
-	};
+	}
 
-	graphics.mouseout = function(eventData) {
+	graphics.mouseover = function(eventData) {
+		this.mouseIn = true;
 		if (this.rotate) {
 			return;
 		}
-		onMouseleave();
+		enableDots();
+	};
+
+	graphics.mouseout = function(eventData) {
+		this.mouseIn = false;
+		if (this.rotate) {
+			return;
+		}
+		disableDots();
 	};
 
 	graphics.mousedown = function(eventData) {
@@ -111,7 +120,6 @@ function createPrisma(data, stage) {
 	graphics.mouseupoutside = function(eventData) {
 		this.drag = false;
 		this.dragPoint = null;
-		onMouseleave();
 	};
 
 	graphics.mousemove = function(eventData) {
@@ -128,15 +136,6 @@ function createPrisma(data, stage) {
 	displayObj.points = [];
 	displayObj.pointsInter = [];
 
-	{
-		var pt = new PIXI.Graphics();
-		pt.lineStyle(1, 0xFF0000, 1);
-		pt.beginFill(0xFF0000, 1);
-		pt.drawCircle(0, 0, 3);
-		pt.endFill();
-		displayObj.addChild(pt);
-	}
-
 	for (var i = 0; i < data.points.length; ++i) {
 		var pt = new PIXI.Graphics();
 		pt.position = new PIXI.Point(data.points[i].x, data.points[i].y);
@@ -150,34 +149,56 @@ function createPrisma(data, stage) {
 		ptInter.position = new PIXI.Point(data.points[i].x, data.points[i].y);
 		ptInter.interactive = true;
 		ptInter.hitArea = new PIXI.Circle(0, 0, 5);
-		ptInter.mouseover = graphics.mouseover;
-		ptInter.mouseout = graphics.mouseout;
 		ptInter.graphics = pt;
 
+		ptInter.mouseover = function(eventData) {
+			this.mouseIn = true;
+			this.graphics.visible = true;
+		};
+
+		ptInter.mouseout = function(eventData) {
+			this.mouseIn = false;
+			if (!this.rotate) {
+				this.graphics.visible = false;
+			}
+		};
+		
 		ptInter.mousedown = function(eventData) {
 			graphics.rotate = true;
 			this.rotate = true;
-			onMouseleave();
-			this.graphics.visible = true;
 		};
 
 		ptInter.mouseup = function(eventData) {
 			graphics.rotate = false;
 			this.rotate = false;
+			if (!this.mouseIn) {
+				this.graphics.visible = false;
+			}
 		};
 
 		ptInter.mouseupoutside = function(eventData) {
 			graphics.rotate = false;
 			this.rotate = false;
-			onMouseleave();
+			if (!this.mouseIn) {
+				this.graphics.visible = false;
+			}
+			if(graphics.mouseIn) {
+				enableDots();
+			}
 		};
 
 		ptInter.mousemove = function(eventData) {
+			if (this.mouseIn) { // TODO: remove this hack
+				this.graphics.visible = true;
+			}
+
 			if (!this.rotate) {
 				return;
 			}
 
 			// NOTE: eventData.getLocalPosition(this.parent); does not work in this case
+			// should be eventData.getLocalPosition(this.parent) but w/o rotations
+			// TODO: fix for multiple parents
 			var localPos = new PIXI.Point(eventData.global.x - this.parent.x, eventData.global.y - this.parent.y);
 
 			var x1 = this.position.x;
@@ -185,8 +206,7 @@ function createPrisma(data, stage) {
 			var x2 = localPos.x;
 			var y2 = localPos.y;
 
-			var val = (x1*x2 + y1*y2) / Math.sqrt(x1*x1*x2*x2 + x2*x2*y1*y1 + x1*x1*y2*y2 + y1*y1*y2*y2);
-			var angle = Math.acos(val);
+			var angle = Math.atan2(y2, x2) - Math.atan2(y1, x1);
 			displayObj.rotation = angle;
 		};
 
