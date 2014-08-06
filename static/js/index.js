@@ -191,6 +191,13 @@ PIXI.Matrix.prototype.inverse = function() {
 	return res;
 };
 
+PIXI.Matrix.prototype.translateBy = function(dx, dy) {
+	var res = this.clone();
+	res.tx = this.a*dx + this.b*dy + this.tx;
+	res.ty = this.c*dx + this.b*dy + this.ty;
+	return res;
+};
+
 
 (function() {
 
@@ -325,10 +332,22 @@ function createPrismaGraphics(data) {
 			return;
 		}
 
-		this.parent.lastNotCollide = this.parent.position.clone();
-		this.parent.position = eventData.global.clone();
-		this.parent.position.x -= this.dragPoint.x;
-		this.parent.position.y -= this.dragPoint.y;
+		var target = levels[1].targets[0].target;
+		var collides = target.shape.toGlobal(target).collides(graphics.shape.toGlobal(graphics));
+		if (!collides) {
+			this.parent.lastNotCollide = this.parent.position.clone();
+			this.parent.position = eventData.global.clone();
+			this.parent.position.x -= this.dragPoint.x;
+			this.parent.position.y -= this.dragPoint.y;
+			this.parent.updateTransform();
+			collides = target.shape.toGlobal(target).collides(graphics.shape.toGlobal(graphics));
+			if (collides) {
+				this.parent.position = this.parent.lastNotCollide.clone();
+			}
+		}
+		else {
+			this.parent.position = this.parent.lastNotCollide.clone();
+		}
 	};
 
 	return graphics;
@@ -348,7 +367,7 @@ function enableDots(displayObj) {
 
 function createPrisma(data, stage) {
 	var displayObj = new PIXI.DisplayObjectContainer();
-	displayObj.position =  new PIXI.Point(data.position.x, data.position.y);
+	displayObj.position = new PIXI.Point(data.position.x, data.position.y);
 	displayObj.graphics = createPrismaGraphics(data);
 	displayObj.addChild(displayObj.graphics);
 	displayObj.points = [];
@@ -460,20 +479,12 @@ function runGame() {
     requestAnimFrame(update);
 
     function update() {
-	    // render the stage
 	    renderer.render(stage);
 	    onUpdate();
 	    requestAnimFrame(update);
 	}
 
 	function onUpdate() {
-		var target = levels[1].targets[0].target;
-		var graphics = levels[1].prismas[0].polygon.graphics;
-		var collides = target.shape.toGlobal(target).collides(graphics.shape.toGlobal(graphics));
-		if (collides) {
-			graphics.parent.position = graphics.parent.lastNotCollide.clone();
-		}
-		// console.log(collides);
 	}
 }
 
