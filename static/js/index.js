@@ -12,11 +12,11 @@ var levels = {
 	1: {
 		lasers: [{
 			color: 0x00FF00,
-			position: {x: 400/2, y: 300/2},		
+			position: {x: 400/2, y: 300/2},
 		}],
 		targets: [{
 			color: 0x00FF00,
-			position: {x: 400/2, y: 300/2},		
+			position: {x: 400/2, y: 300/2},
 		}],
 		prismas: [{
 			color: 0x00FF00,
@@ -162,7 +162,7 @@ function createPrisma(data, stage) {
 				this.graphics.visible = false;
 			}
 		};
-		
+
 		ptInter.mousedown = function(eventData) {
 			graphics.rotate = true;
 			this.rotate = true;
@@ -236,7 +236,7 @@ function loadLevel(data, stage) {
 
 function runGame() {
     var stage = new PIXI.Stage(0x000000, true);
-    var renderer = PIXI.autoDetectRenderer(640, 480, document.getElementById("game-scene"));
+    var renderer = new PIXI.CanvasRenderer(640, 480, document.getElementById("game-scene"));
 
     loadLevel(levels[1], stage);
 
