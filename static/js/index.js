@@ -306,6 +306,8 @@ function createPrismaGraphics(data) {
 
 	graphics.mouseout = function(eventData) {
 		this.parent.mouseIn = false;
+		this.drag = false;
+		this.dragPoint = null;
 		if (this.parent.rotate) {
 			return;
 		}
@@ -341,11 +343,10 @@ function createPrismaGraphics(data) {
 			this.parent.position.y -= this.dragPoint.y;
 			this.parent.updateTransform();
 			collides = target.shape.toGlobal(target).collides(graphics.shape.toGlobal(graphics));
-			if (collides) {
-				this.parent.position = this.parent.lastNotCollide.clone();
-			}
+
 		}
-		else {
+
+		if (collides) {
 			this.parent.position = this.parent.lastNotCollide.clone();
 		}
 	};
