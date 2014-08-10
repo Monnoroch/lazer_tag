@@ -2,3 +2,4 @@
 lazer_tag
 *.o
 static/js/pixi.js/*
+static/js/PhysicsJS/*

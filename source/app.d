@@ -4,7 +4,7 @@ shared static this() {
 	auto router = new URLRouter;
 	auto fsettings = new HTTPFileServerSettings;
 	fsettings.serverPathPrefix = "/static/";
-	fsettings.maxAge = core.time.Duration.zero;
+	fsettings.maxAge = core.time.Duration.zero; // disable caching
 	router.get("/static/*", serveStaticFiles("./static/", fsettings));
 	router.get("/", &index);
 

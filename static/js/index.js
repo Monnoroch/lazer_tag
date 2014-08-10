@@ -1,225 +1,16 @@
-PIXI.Rectangle.prototype.collides = function(shape) {
-	if (shape instanceof PIXI.Rectangle) {
-		return
-			this.x < shape.x + shape.width &&
-			this.x + this.width > shape.x &&
-			this.y < shape.y + shape.height &&
-			this.height + this.y > shape.y;
-	}
-
-	if (shape instanceof PIXI.Polygon) {
-		return shape.collides(new PIXI.Polygon(this.x, thix.y, thix.x + this.width, this.y, this.x + this.width, this.y + this.height, this.x, this.y + this.height));
-	}
-
-	if (shape instanceof PIXI.Ellipse) {
-		return undefined;
-	}
-
-	if (shape instanceof PIXI.Circle) {
-		return undefined;
-	}
-
-	return undefined;
-};
-
-PIXI.Point.prototype.distSquare = function(point) {
-	var dx = this.x - point.x;
-	var dy = this.y - point.y;
-	return dx*dx + dy*dy;
-};
-
-PIXI.Point.prototype.dist = function(point) {
-	return Math.sqrt(this.distSquare(point));
-};
-
-function distancePointToEdge(px, py, x1, y1, x2, y2) {
-	var pt = new PIXI.Point(px, py);
-	var p1 = new PIXI.Point(x1, y1);
-	var p2 = new PIXI.Point(x2, y2);
-
-	var r1 = pt.distSquare(p1);
-	var r2 = pt.distSquare(p2);
-	var r12 = p1.distSquare(p2);
-
-    if(r1 >= r2 + r12) {
-    	return Math.sqrt(r2);
-    }
-    else if(r2 >= r1 + r12) {
-    	return Math.sqrt(r1);
-    }
-
-    var a1 = x1 - px;
-    var a2 = y1 - py;
-    var b1 = x2 - px;
-    var b2 = y2 - py;
-
-    var d = a1*b2 - b1*a2;
-
-    return Math.sqrt(d*d/r12);
-}
-
-PIXI.Polygon.prototype.collides = function(shape) {
-	if (shape instanceof PIXI.Rectangle) {
-		return shape.collides(this);
-	}
-
-	if (shape instanceof PIXI.Polygon) {
-		for (var i = 0; i < this.points.length; ++i) {
-			if (shape.contains(this.points[i].x, this.points[i].y)) {
-				return true;
-			}
-		}
-		for (var i = 0; i < shape.points.length; ++i) {
-			if (this.contains(shape.points[i].x, shape.points[i].y)) {
-				return true;
-			}
-		}
-		return false;
-	}
-
-	if (shape instanceof PIXI.Ellipse) {
-		return undefined;
-	}
-
-	if (shape instanceof PIXI.Circle) {
-		if (this.contains(shape.x, shape.y)) {
-			return true;
-		}
-
-		for (var i = 0; i < this.points.length; ++i) {
-			var next = (i == this.points.length - 1) ? 0 : i + 1;
-			var x1 = this.points[i].x;
-			var y1 = this.points[i].y;
-			var x2 = this.points[next].x;
-			var y2 = this.points[next].y;
-
-			if (distancePointToEdge(shape.x, shape.y, x1, y1, x2, y2) < shape.radius) {
-				return true;
-			}
-		}
-		return false;
-	}
-
-	return undefined;
-};
-
-PIXI.Circle.prototype.collides = function(shape) {
-	if (shape instanceof PIXI.Circle) {
-		var dx = this.x - shape.x;
-		var dy = this.y - shape.y;
-		var distance = Math.sqrt(dx * dx + dy * dy);
-		return distance < this.radius + shape.radius;
-	}
-
-	if (shape instanceof PIXI.Polygon) {
-		return shape.collides(this);
-	}
-
-	if (shape instanceof PIXI.Ellipse) {
-		return undefined;
-	}
-
-	if (shape instanceof PIXI.Rectangle) {
-		return shape.collides(this);
-	}
-
-	return undefined;
-};
-
-PIXI.Ellipse.prototype.collides = function(shape) {
-	if (shape instanceof PIXI.Circle) {
-		return shape.collides(this);
-	}
-
-	if (shape instanceof PIXI.Polygon) {
-		return shape.collides(this);
-	}
-
-	if (shape instanceof PIXI.Ellipse) {
-		return undefined;
-	}
-
-	if (shape instanceof PIXI.Rectangle) {
-		return shape.collides(this);
-	}
-
-	return undefined;
-};
-
-
-PIXI.Point.prototype.mulBy = function(matrix) {
-	return new PIXI.Point(matrix.tx + matrix.a*this.x + matrix.b*this.y, matrix.ty + matrix.c*this.x + matrix.d*this.y);
-};
-
-PIXI.Point.prototype.toGlobal = function(displayObject) {
-	return this.mulBy(displayObject.worldTransform);
-};
-
-PIXI.Rectangle.prototype.toGlobal = function(displayObject) {
-	var gpoint = (new PIXI.Point(this.x, this.y)).toGlobal(displayObject);
-	return new PIXI.Rectangle(gpoint.x, gpoint.y, this.width, this.height);
-};
-
-PIXI.Polygon.prototype.toGlobal = function(displayObject) {
-	var points = [];
-	for (var i = 0; i < this.points.length; ++i) {
-		var gpoint = (new PIXI.Point(this.points[i].x, this.points[i].y)).toGlobal(displayObject);
-		points.push(gpoint.x);
-		points.push(gpoint.y);
-	}
-	return new PIXI.Polygon(points);
-};
-
-PIXI.Circle.prototype.toGlobal = function(displayObject) {
-	var gpoint = (new PIXI.Point(this.x, this.y)).toGlobal(displayObject);
-	return new PIXI.Circle(gpoint.x, gpoint.y, this.radius);
-};
-
-PIXI.Ellipse.prototype.toGlobal = function(displayObject) {
-	return undefined;
-};
-
-PIXI.Matrix.prototype.inverse = function() {
-	var res = new PIXI.Matrix();
-	var del = this.a*this.d - this.b*this.c;
-	res.a = this.d / del;
-	res.b = this.b / -del;
-	res.c = this.c / -del;
-	res.d = this.a / del;
-	res.tx = (this.d*this.tx - this.b*this.ty) / -del;
-	res.ty = (this.c*this.tx - this.a*this.ty) / del;
-	return res;
-};
-
-PIXI.Matrix.prototype.translateBy = function(dx, dy) {
-	var res = this.clone();
-	res.tx = this.a*dx + this.b*dy + this.tx;
-	res.ty = this.c*dx + this.b*dy + this.ty;
-	return res;
-};
-
-
 (function() {
-
-$(document).ready(function() {
-    $("#start-game").click(function() {
-		$("#start-game").hide();
-		$("#game-scene").show();
-		runGame();
-	});
-});
 
 var levels = {
 	1: {
 		lasers: [{
-			color: 0x00FFFF,
-			position: {x: 400/2, y: 300/2},
+			color: 0xFF00FF,
+			position: {x: 40, y: 200},
 			direction: {x: 1, y: 0},
 			enabled: true,
 		}],
 		targets: [{
 			color: 0x00FFFF,
-			position: {x: 400/2, y: 300/2},
+			position: {x: 400, y: 300/2},
 		}],
 		prismas: [{
 			color: 0x00FF00,
@@ -229,29 +20,65 @@ var levels = {
 				{x: 30, y: 0},
 			],
 			position: {x: 640/2, y: 480/2},
+		}, {
+			color: 0x00FF00,
+			points: [
+				{x: 0, y: -20, color: 0x0000FF},
+				{x: -30, y: 20},
+				{x: 30, y: 0},
+			],
+			position: {x: 100, y: 100},
 		}],
 	}
 };
 
-function createLaser(data, stage) {
-	// var graphics = new PIXI.Graphics();
-	// graphics.position = new PIXI.Point(data.position.x, data.position.y);
-	// graphics.lineStyle(3, data.color, 1);
-	// graphics.beginFill(data.color, 1);
-	// graphics.drawCircle(0, 0, 20);
-	// graphics.endFill();
-
-	// stage.addChild(graphics);
-}
-
-function createTarget(data, stage) {
+function createLaser(data, stage, world) {
 	var graphics = new PIXI.Graphics();
 	graphics.position = new PIXI.Point(data.position.x, data.position.y);
 	graphics.lineStyle(3, data.color, 1);
-	graphics.beginFill(data.color, 1);
-	graphics.drawCircle(0, 0, 20);
+	graphics.beginFill(data.color, 0.5);
+
+	var vec = Physics.vector(data.direction.x, data.direction.y).normalize();
+	var p1 = vec.clone().mult(35);
+	var p2 = vec.clone().rotate(150*Math.PI/180).normalize().mult(25);
+	var p3 = vec.clone().rotate(210*Math.PI/180).normalize().mult(25);
+
+	graphics.moveTo(p1.x, p1.y);
+	graphics.lineTo(p2.x, p2.y);
+	graphics.lineTo(p3.x, p3.y);
+	graphics.lineTo(p1.x, p1.y);
+
 	graphics.endFill();
-	graphics.shape = new PIXI.Circle(0, 0, 20);
+
+	graphics.body = Physics.body('convex-polygon', {
+		x: data.position.x,
+		y: data.position.y,
+		vertices: [p1, p2, p3],
+	});
+	graphics.body.treatment = "static";
+	world.add(graphics.body);
+
+	stage.addChild(graphics);
+	data.lazer = graphics;
+}
+
+function createTarget(data, stage, world) {
+	var radius = 20;
+	var graphics = new PIXI.Graphics();
+	graphics.position = new PIXI.Point(data.position.x, data.position.y);
+	graphics.lineStyle(3, data.color, 1);
+	graphics.beginFill(data.color, 0.5);
+	graphics.drawCircle(0, 0, radius);
+	graphics.endFill();
+	graphics.shape = new PIXI.Circle(0, 0, radius);
+
+	graphics.body = Physics.body('circle', {
+		x: data.position.x,
+		y: data.position.y,
+		radius: radius,
+	});
+	graphics.body.treatment = "static";
+	world.add(graphics.body);
 
 	stage.addChild(graphics);
 	data.target = graphics;
@@ -284,7 +111,7 @@ function createPoly(data) {
 	return graphics;
 }
 
-function createPrismaGraphics(data) {
+function createPrismaGraphics(data, world) {
 	var points = [];
 	for (var i = 0; i < data.points.length; ++i) {
 		points.push(data.points[i].x);
@@ -302,53 +129,15 @@ function createPrismaGraphics(data) {
 			return;
 		}
 		enableDots(this.parent);
+		world.interactive.options.type = "translate";
 	};
 
 	graphics.mouseout = function(eventData) {
 		this.parent.mouseIn = false;
-		this.drag = false;
-		this.dragPoint = null;
 		if (this.parent.rotate) {
 			return;
 		}
 		disableDots(this.parent);
-	};
-
-	graphics.mousedown = function(eventData) {
-		this.drag = true;
-		this.dragPoint = eventData.getLocalPosition(this.parent);
-	};
-
-	graphics.mouseup = function(eventData) {
-		this.drag = false;
-		this.dragPoint = null;
-	};
-
-	graphics.mouseupoutside = function(eventData) {
-		this.drag = false;
-		this.dragPoint = null;
-	};
-
-	graphics.mousemove = function(eventData) {
-		if (!this.drag) {
-			return;
-		}
-
-		var target = levels[1].targets[0].target;
-		var collides = target.shape.toGlobal(target).collides(graphics.shape.toGlobal(graphics));
-		if (!collides) {
-			this.parent.lastNotCollide = this.parent.position.clone();
-			this.parent.position = eventData.global.clone();
-			this.parent.position.x -= this.dragPoint.x;
-			this.parent.position.y -= this.dragPoint.y;
-			this.parent.updateTransform();
-			collides = target.shape.toGlobal(target).collides(graphics.shape.toGlobal(graphics));
-
-		}
-
-		if (collides) {
-			this.parent.position = this.parent.lastNotCollide.clone();
-		}
 	};
 
 	return graphics;
@@ -366,13 +155,21 @@ function enableDots(displayObj) {
 	}
 }
 
-function createPrisma(data, stage) {
+function createPrisma(data, stage, world) {
 	var displayObj = new PIXI.DisplayObjectContainer();
 	displayObj.position = new PIXI.Point(data.position.x, data.position.y);
-	displayObj.graphics = createPrismaGraphics(data);
+	displayObj.graphics = createPrismaGraphics(data, world);
 	displayObj.addChild(displayObj.graphics);
 	displayObj.points = [];
 	displayObj.pointsInter = [];
+
+	displayObj.body = Physics.body('convex-polygon', {
+		x: data.position.x,
+		y: data.position.y,
+		vertices: data.points,
+	});
+	world.add(displayObj.body);
+	world.interactive._targets.push(displayObj.body);
 
 	for (var i = 0; i < data.points.length; ++i) {
 		var pt = new PIXI.Graphics();
@@ -392,6 +189,7 @@ function createPrisma(data, stage) {
 		ptInter.mouseover = function(eventData) {
 			this.mouseIn = true;
 			this.graphics.visible = true;
+			world.interactive.options.type = "rotate";
 		};
 
 		ptInter.mouseout = function(eventData) {
@@ -404,6 +202,7 @@ function createPrisma(data, stage) {
 		ptInter.mousedown = function(eventData) {
 			displayObj.rotate = true;
 			this.rotate = true;
+			world.interactive.grabBody(eventData.global, displayObj.body);
 		};
 
 		ptInter.mouseup = function(eventData) {
@@ -428,24 +227,8 @@ function createPrisma(data, stage) {
 		ptInter.mousemove = function(eventData) {
 			if (this.mouseIn) { // TODO: remove this hack
 				this.graphics.visible = true;
+				world.interactive.options.type = "rotate";
 			}
-
-			if (!this.rotate) {
-				return;
-			}
-
-			// NOTE: eventData.getLocalPosition(this.parent); does not work in this case
-			// should be eventData.getLocalPosition(this.parent) but w/o rotations
-			// TODO: fix for multiple parents
-			var localPos = new PIXI.Point(eventData.global.x - this.parent.x, eventData.global.y - this.parent.y);
-
-			var x1 = this.position.x;
-			var y1 = this.position.y;
-			var x2 = localPos.x;
-			var y2 = localPos.y;
-
-			var angle = Math.atan2(y2, x2) - Math.atan2(y1, x1);
-			displayObj.rotation = angle;
 		};
 
 		displayObj.points.push(ptInter);
@@ -457,36 +240,83 @@ function createPrisma(data, stage) {
 	data.polygon = displayObj;
 }
 
-function loadLevel(data, stage) {
+function loadLevel(data, stage, world) {
 	for (var i = 0; i < data.lasers.length; ++i) {
-		createLaser(data.lasers[i], stage);
+		createLaser(data.lasers[i], stage, world);
 	}
 	for (var i = 0; i < data.targets.length; ++i) {
-		createTarget(data.targets[i], stage);
+		createTarget(data.targets[i], stage, world);
 	}
 	for (var i = 0; i < data.prismas.length; ++i) {
-		createPrisma(data.prismas[i], stage);
+		createPrisma(data.prismas[i], stage, world);
 	}
 }
 
+$(document).ready(function() {
+    $("#start-game").click(function() {
+		$("#start-game").hide();
+		$("#game-scene").show();
+		runGame();
+	});
+});
+
 function runGame() {
-    var stage = new PIXI.Stage(0x000000, true);
-    var renderer = new PIXI.CanvasRenderer(640, 480, document.getElementById("game-scene"));
+	Physics(function(world) {
+		Physics.util.ticker.on(function(time, dt) {
+			world.step(time);
+		});
 
-    (new PIXI.Rectangle(0, 1, 2, 3)).collides(new PIXI.Circle(0, 1, 2));
+		Physics.util.ticker.start();
 
-    loadLevel(levels[1], stage);
+		world.add(Physics.behavior('body-impulse-response'));
 
-    requestAnimFrame(update);
+		world.add(Physics.behavior('edge-collision-detection', {
+			aabb: Physics.aabb(0, 0, 640, 480),
+			restitution: 0.3,
+			cof: 0.7,
+		}));
 
-    function update() {
-	    renderer.render(stage);
-	    onUpdate();
-	    requestAnimFrame(update);
-	}
+		world.add(Physics.behavior('body-collision-detection'));
+		world.add(Physics.behavior('sweep-prune'));
 
-	function onUpdate() {
-	}
+		world.interactive = Physics.behavior('interactive', {
+			el: 'game-scene',
+			type: "translate",
+			inertion: false,
+			specialTreatment: "dynamic",
+		});
+		world.interactive.applyTo([]);
+		world.add(world.interactive);
+
+		var stage = new PIXI.Stage(0x000000, true);
+	    var renderer = new PIXI.CanvasRenderer(640, 480, document.getElementById("game-scene"));
+
+	    world.on('step', function() {
+	    	for (var i = 0; i < levels[1].prismas.length; ++i) {
+	    		var prisma = levels[1].prismas[i].polygon;
+	    		prisma.position.x = prisma.body.state.pos.x;
+	    		prisma.position.y = prisma.body.state.pos.y;
+	    		prisma.rotation = prisma.body.state.angular.pos;
+	    	}
+	    	for (var i = 0; i < levels[1].targets.length; ++i) {
+	    		var target = levels[1].targets[i].target;
+	    		target.position.x = target.body.state.pos.x;
+	    		target.position.y = target.body.state.pos.y;
+	    		target.rotation = target.body.state.angular.pos;
+	    	}
+	    	for (var i = 0; i < levels[1].lasers.length; ++i) {
+	    		var lazer = levels[1].lasers[i].lazer;
+	    		lazer.position.x = lazer.body.state.pos.x;
+	    		lazer.position.y = lazer.body.state.pos.y;
+	    		lazer.rotation = lazer.body.state.angular.pos;
+	    	}
+			renderer.render(stage);
+		});
+
+		loadLevel(levels[1], stage, world);
+
+		// world.add(Physics.behavior('constant-acceleration'));
+	});
 }
 
 })();
