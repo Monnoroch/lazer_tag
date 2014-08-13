@@ -22,18 +22,16 @@ var levels = {
 			],
 			position: {x: 640/2, y: 480/2-30},
 			opacity : 0.5,
-		},
-		// {
-		// 	color: 0x00FF00,
-		// 	points: [
-		// 		{x: 0, y: -20, color: 0x0000FF},
-		// 		{x: -30, y: 20},
-		// 		{x: 30, y: 0},
-		// 	],
-		// 	position: {x: 100, y: 100},
-		// 	opacity : 0,
-		// }
-		],
+		}, {
+			color: 0x00FF00,
+			points: [
+				{x: 0, y: -20, color: 0x0000FF},
+				{x: -30, y: 20},
+				{x: 30, y: 0},
+			],
+			position: {x: 100, y: 100},
+			opacity : 0,
+		}],
 	}
 };
 
