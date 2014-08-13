@@ -4,8 +4,8 @@ var levels = {
 	1: {
 		lasers: [{
 			color: 0xFF00FF,
-			position: {x: 40, y: 200},
-			direction: {x: 1, y: 0},
+			position: {x: 100, y: 300},
+			direction: {x: Math.sqrt(2)/2, y: -Math.sqrt(2)/2},
 			strength: 0.8,
 			enabled: true,
 		}],
@@ -303,23 +303,23 @@ function buildRibs(data) {
 
 	// add border
 	res.push({
-		from: {x: 0, y: 0},
-		to: {x: 0, y: 480},
+		from: Physics.vector(0, 0),
+		to: Physics.vector(0, 480),
 		border: true,
 	});
 	res.push({
-		from: {x: 0, y: 480},
-		to: {x: 640, y: 480},
+		from: Physics.vector(0, 480),
+		to: Physics.vector(640, 480),
 		border: true,
 	});
 	res.push({
-		from: {x: 640, y: 480},
-		to: {x: 640, y: 0},
+		from: Physics.vector(640, 480),
+		to: Physics.vector(640, 0),
 		border: true,
 	});
 	res.push({
-		from: {x: 640, y: 0},
-		to: {x: 0, y: 0},
+		from: Physics.vector(640, 0),
+		to: Physics.vector(0, 0),
 		border: true,
 	});
 
@@ -335,8 +335,8 @@ function buildRibs(data) {
 			var nextPtPos = Physics.vector(nextPt.x, nextPt.y).rotate(pr.polygon.body.state.angular.pos);
 
 			res.push({
-				from: {x: prPos.x + ptPos.x, y: prPos.y + ptPos.y},
-				to: {x: prPos.x + nextPtPos.x, y: prPos.y + nextPtPos.y},
+				from: Physics.vector(prPos.x + ptPos.x, prPos.y + ptPos.y),
+				to: Physics.vector(prPos.x + nextPtPos.x, prPos.y + nextPtPos.y),
 				color: pt.color || pr.color,
 				opacity: pt.opacity,
 				prisma: pr,
@@ -363,16 +363,25 @@ function intersection(beam, rib) {
 	}
 	else {
 		var tg = beam.dir.y / beam.dir.x;
-		a = ((p1.y - p0.y) - tg * (p1.x - p0.x)) / ((p2.y - p1.y) - tg * (p2.x - p1.x));
+		a = ((p1.y - p0.y) - tg * (p1.x - p0.x)) / ( -(p2.y - p1.y) + tg * (p2.x - p1.x));
 		b = ((p1.x - p0.x) + a * (p2.x - p1.x)) / beam.dir.x;
 	}
 	if (b >= 0 && a >= 0 && a <= 1) { // intersects!
-		return {x: p0.x + b * beam.dir.x, y: p0.y + b * beam.dir.y};
+		return Physics.vector(p0.x + b * beam.dir.x, p0.y + b * beam.dir.y);
 	}
 	return undefined;
 }
 
-function traceBeam(beam, ribs, world, res) {
+function traceBeam(beam, ribs, world, res, depth) {
+	if (depth === undefined) {
+		depth = 1;
+	}
+
+	if (depth > 100) {
+		return;
+	}
+
+
 	var dist = 9999999;
 	var intersec = null;
 	var num = -1;
@@ -383,7 +392,7 @@ function traceBeam(beam, ribs, world, res) {
 			continue;
 		}
 
-		var ds = (beam.pos.x - is.x) * (beam.pos.x - is.x) + (beam.pos.y - is.y) * (beam.pos.y - is.y);
+		var ds = beam.pos.clone().vsub(is).norm();
 		if (ds < dist) {
 			dist = ds;
 			intersec = is;
@@ -395,14 +404,29 @@ function traceBeam(beam, ribs, world, res) {
 		return;
 	}
 
-	// TODO: start traceBeam with new reflected beam
-
 	res.push({
-		from: Physics.vector(beam.pos.x, beam.pos.y),
-		to: Physics.vector(intersec.x, intersec.y),
+		from: beam.pos.clone(),
+		to: intersec.clone(),
 		color: beam.color,
 		strength: beam.strength,
 	});
+
+	if (ribs[num].border) {
+		return;
+	}
+
+	// TODO: start traceBeam with new reflected beam
+	var rib = ribs[num];
+	var vec2 = rib.to.clone().vsub(rib.from);
+	var angle = Math.atan2(beam.dir.y, beam.dir.x) - Math.atan2(vec2.y, vec2.x);
+	var newBeam = {
+		pos: intersec.clone().vsub(beam.dir.clone().mult(0.1)),
+		dir: beam.dir.clone().rotate(2 * Math.abs(angle)).normalize(),
+		color: beam.color,
+		strength: beam.strength,
+	};
+
+	traceBeam(newBeam, ribs, world, res, depth + 1);
 }
 
 function calculateBeams(data, world) {
@@ -415,8 +439,8 @@ function calculateBeams(data, world) {
 		}
 
 		var beam = {
-			pos: lazer.position,
-			dir: lazer.direction,
+			pos: Physics.vector(lazer.position.x, lazer.position.y),
+			dir: Physics.vector(lazer.direction.x, lazer.direction.y).normalize(),
 			color: lazer.color,
 			strength: lazer.strength,
 		};
