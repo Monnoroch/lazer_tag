@@ -726,7 +726,7 @@ function renderBeams(beams, stage) {
 		var beam = beams[i];
 		var bg = new PIXI.Graphics();
 		var cs = getLazerColorStrength(beam.color);
-		bg.lineStyle(3, cs.col, cs.str);
+		bg.lineStyle(3, cs.col, graphicsOpacity(cs.str));
 		bg.moveTo(beam.from.x, beam.from.y);
 		bg.lineTo(beam.to.x, beam.to.y);
 		stage.beams.push(bg);
